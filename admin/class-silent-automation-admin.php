@@ -70,6 +70,13 @@ class Silent_Automation_Admin {
 				</div>
 			</header>
 
+			<!-- Navigation Tabs -->
+			<nav class="sa-nav">
+				<a href="<?php echo admin_url('admin.php?page=silent-automation'); ?>" class="sa-nav-item <?php echo $tab === 'overview' ? 'active' : ''; ?>">Overview</a>
+				<a href="<?php echo admin_url('admin.php?page=silent-automation&tab=automations'); ?>" class="sa-nav-item <?php echo $tab === 'automations' ? 'active' : ''; ?>">Automations</a>
+				<a href="<?php echo admin_url('admin.php?page=silent-automation&tab=settings'); ?>" class="sa-nav-item <?php echo $tab === 'settings' ? 'active' : ''; ?>">Settings</a>
+			</nav>
+
 			<!-- Stats Cards Section -->
 			<?php $this->render_stats_section(); ?>
 
@@ -213,6 +220,63 @@ class Silent_Automation_Admin {
 				<?php if ( empty( $automations ) ) : ?>
 					<div style="padding: 40px; text-align: center; color: var(--sa-text-muted);">
 						No custom automations created yet.
+					</div>
+				<?php else : ?>
+					<table class="sa-table">
+						<thead>
+							<tr>
+								<th>Automation Name</th>
+								<th>Condition</th>
+								<th>Action</th>
+								<th>Status</th>
+								<th style="text-align: right;">Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php foreach ( $automations as $auto ) : ?>
+								<tr>
+									<td><strong><?php echo esc_html( $auto->name ); ?></strong></td>
+									<td><?php echo esc_html( ucfirst( str_replace('_', ' ', $auto->condition_type) ) ); ?></td>
+									<td><?php echo esc_html( ucfirst( $auto->action_type ) ); ?></td>
+									<td>
+										<span class="sa-status-badge <?php echo $auto->status === 'active' ? 'sa-status-active' : 'sa-status-paused'; ?>">
+											<span class="sa-status-dot"></span>
+											<?php echo esc_html( ucfirst( $auto->status ) ); ?>
+										</span>
+									</td>
+									<td style="text-align: right;">
+										<button class="sa-btn sa-btn-secondary silent-delete-auto" data-id="<?php echo $auto->id; ?>" style="padding: 6px 10px;">
+											<span class="dashicons dashicons-trash"></span>
+										</button>
+									</td>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+				<?php endif; ?>
+			</div>
+		</section>
+		<?php
+	}
+
+	private function render_automations_tab() {
+		$automations = Silent_Automation_Automation::get_instance()->get_automations('all');
+		?>
+		<section class="sa-section">
+			<div class="sa-header-content" style="margin-bottom: 24px;">
+				<h2 class="sa-section-title">All Automations</h2>
+				<p style="color: var(--sa-text-muted);">Manage your custom behavior-based triggers and actions.</p>
+			</div>
+			
+			<div class="sa-automations-list">
+				<?php if ( empty( $automations ) ) : ?>
+					<div class="sa-stat-card" style="text-align: center; padding: 60px;">
+						<span class="dashicons dashicons-plus-alt" style="font-size: 48px; width: 48px; height: 48px; color: var(--sa-text-muted); margin-bottom: 16px;"></span>
+						<h3>No automations yet</h3>
+						<p style="color: var(--sa-text-muted); margin-bottom: 24px;">Create your first automation to start converting visitors.</p>
+						<button class="sa-btn sa-btn-primary" onclick="document.getElementById('silent-open-builder').click()">
+							Create Automation
+						</button>
 					</div>
 				<?php else : ?>
 					<table class="sa-table">

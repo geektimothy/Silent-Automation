@@ -42,6 +42,33 @@
     margin: 0;
 }
 
+/* Navigation Tabs */
+.sa-nav {
+    display: flex;
+    gap: 32px;
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--sa-border);
+}
+
+.sa-nav-item {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sa-text-muted);
+    text-decoration: none;
+    padding: 12px 0;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.sa-nav-item:hover {
+    color: var(--sa-text-main);
+}
+
+.sa-nav-item.active {
+    color: var(--sa-primary);
+    border-bottom-color: var(--sa-primary);
+}
+
 .sa-actions {
     display: flex;
     gap: 12px;

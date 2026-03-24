@@ -51,12 +51,14 @@ class Silent_Automation {
 	 * Include required files
 	 */
 	private function includes() {
-		require_once SILENT_AUTOMATION_PATH . 'includes/class-silent-automation-db.php';
-		require_once SILENT_AUTOMATION_PATH . 'includes/class-silent-automation-api.php';
-		require_once SILENT_AUTOMATION_PATH . 'includes/class-silent-automation-tracker.php';
-		require_once SILENT_AUTOMATION_PATH . 'includes/class-silent-automation-woocommerce.php';
-		require_once SILENT_AUTOMATION_PATH . 'includes/class-silent-automation-automation.php';
-		require_once SILENT_AUTOMATION_PATH . 'includes/class-silent-automation-whatsapp.php';
+		$includes_path = SILENT_AUTOMATION_PATH . 'includes/';
+		
+		require_once $includes_path . 'class-silent-automation-db.php';
+		require_once $includes_path . 'class-silent-automation-api.php';
+		require_once $includes_path . 'class-silent-automation-tracker.php';
+		require_once $includes_path . 'class-silent-automation-woocommerce.php';
+		require_once $includes_path . 'class-silent-automation-automation.php';
+		require_once $includes_path . 'class-silent-automation-whatsapp.php';
 		
 		if ( is_admin() ) {
 			require_once SILENT_AUTOMATION_PATH . 'admin/class-silent-automation-admin.php';
