@@ -25,12 +25,21 @@ class Silent_Automation_Public {
 		wp_enqueue_script( 'silent-tracker-js', SILENT_AUTOMATION_URL . 'assets/js/tracker.js', array(), SILENT_AUTOMATION_VERSION, true );
 		
 		$active_rules = get_option( 'silent_automation_active_rules', array() );
+		$custom_automations = Silent_Automation_Automation::get_instance()->get_automations('active');
 		
+		// Map WhatsApp URLs if needed
+		foreach ( $custom_automations as &$auto ) {
+			if ( $auto->action_type === 'whatsapp' ) {
+				$auto->whatsapp_url = Silent_Automation_WhatsApp::get_instance()->get_whatsapp_url( $auto->message );
+			}
+		}
+
 		wp_localize_script( 'silent-tracker-js', 'silentData', array(
-			'apiUrl'      => esc_url_raw( rest_url( 'silent-automation/v1/track' ) ),
-			'nonce'       => wp_create_nonce( 'wp_rest' ),
-			'pageUrl'     => home_url( add_query_arg( array(), $GLOBALS['wp']->request ) ),
-			'activeRules' => array_values( $active_rules )
+			'apiUrl'            => esc_url_raw( rest_url( 'silent-automation/v1/track' ) ),
+			'nonce'             => wp_create_nonce( 'wp_rest' ),
+			'pageUrl'           => home_url( add_query_arg( array(), $GLOBALS['wp']->request ) ),
+			'activeRules'       => array_values( $active_rules ),
+			'customAutomations' => $custom_automations
 		) );
 	}
 
@@ -39,6 +48,7 @@ class Silent_Automation_Public {
 		echo '<div class="silent-popup-content">';
 		echo '<span class="silent-close">&times;</span>';
 		echo '<div class="silent-message"></div>';
+		echo '<div class="silent-action-container"></div>';
 		echo '</div>';
 		echo '</div>';
 	}

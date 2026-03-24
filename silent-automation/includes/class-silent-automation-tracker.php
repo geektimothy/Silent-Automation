@@ -62,6 +62,25 @@ class Silent_Automation_Tracker {
 			);
 		}
 
+		// Rule 3: Cart Abandonment (Added to cart but no checkout in last 10 mins)
+		$abandoned = $wpdb->get_results( "
+			SELECT session_id, MAX(created_at) as last_add
+			FROM $table_name
+			WHERE event_type = 'add_to_cart'
+			AND session_id NOT IN (SELECT session_id FROM $table_name WHERE event_type = 'checkout_completed')
+			AND created_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+			GROUP BY session_id
+		" );
+
+		if ( ! empty( $abandoned ) ) {
+			$patterns[] = array(
+				'type'      => 'cart_abandonment',
+				'page_url'  => 'cart',
+				'condition' => count($abandoned) . ' abandoned carts',
+				'message'   => 'Detected ' . count($abandoned) . ' abandoned carts. Suggest a WhatsApp follow-up.'
+			);
+		}
+
 		return $patterns;
 	}
 

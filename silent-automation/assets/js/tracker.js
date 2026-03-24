@@ -68,22 +68,69 @@
 
     function checkAutomations() {
         const rules = silentData.activeRules || [];
+        const custom = silentData.customAutomations || [];
         const currentUrl = silentData.pageUrl;
 
+        // V1 Compatibility
         rules.forEach(rule => {
             if (rule.page_url === currentUrl) {
-                // In a real scenario, we might check local storage for visit count
-                // For MVP, we show it if the rule is active for this page
                 showPopup(rule.message);
+            }
+        });
+
+        // V2 Custom Automations
+        custom.forEach(auto => {
+            // Logic for triggering custom automations
+            // For MVP, we use local storage to track session state
+            if (shouldTrigger(auto)) {
+                if (auto.action_type === 'popup') {
+                    showPopup(auto.message);
+                } else if (auto.action_type === 'whatsapp') {
+                    showPopup(auto.message, auto.whatsapp_url);
+                }
             }
         });
     }
 
-    function showPopup(message) {
+    function shouldTrigger(auto) {
+        const key = 'silent_trigger_' + auto.id;
+        if (localStorage.getItem(key)) return false;
+
+        if (auto.condition_type === 'high_intent') {
+            const visits = parseInt(localStorage.getItem('silent_visits_' + window.location.pathname) || 0);
+            if (visits >= 2) {
+                localStorage.setItem(key, '1');
+                return true;
+            }
+        }
+        
+        if (auto.condition_type === 'cart_abandonment') {
+            // Simplified: trigger if they are on a product page but haven't checked out
+            if (window.location.pathname.includes('/product/')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Track visits in local storage for instant triggers
+    const pathKey = 'silent_visits_' + window.location.pathname;
+    localStorage.setItem(pathKey, (parseInt(localStorage.getItem(pathKey) || 0) + 1).toString());
+
+    function showPopup(message, actionUrl = null) {
         const popup = document.getElementById('silent-automation-popup');
         if (!popup) return;
 
         popup.querySelector('.silent-message').innerText = message;
+        const actionContainer = popup.querySelector('.silent-action-container');
+        
+        if (actionUrl) {
+            actionContainer.innerHTML = `<a href="${actionUrl}" target="_blank" class="silent-whatsapp-btn">Chat on WhatsApp</a>`;
+        } else {
+            actionContainer.innerHTML = '';
+        }
+
         popup.style.display = 'flex';
 
         popup.querySelector('.silent-close').onclick = () => {

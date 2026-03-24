@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define constants
-define( 'SILENT_AUTOMATION_VERSION', '1.0.0' );
+define( 'SILENT_AUTOMATION_VERSION', '2.0.0' );
 define( 'SILENT_AUTOMATION_PATH', plugin_dir_path( __FILE__ ) );
 define( 'SILENT_AUTOMATION_URL', plugin_dir_url( __FILE__ ) );
 
@@ -54,6 +54,9 @@ class Silent_Automation {
 		require_once SILENT_AUTOMATION_PATH . 'includes/class-silent-automation-db.php';
 		require_once SILENT_AUTOMATION_PATH . 'includes/class-silent-automation-api.php';
 		require_once SILENT_AUTOMATION_PATH . 'includes/class-silent-automation-tracker.php';
+		require_once SILENT_AUTOMATION_PATH . 'includes/class-silent-automation-woocommerce.php';
+		require_once SILENT_AUTOMATION_PATH . 'includes/class-silent-automation-automation.php';
+		require_once SILENT_AUTOMATION_PATH . 'includes/class-silent-automation-whatsapp.php';
 		
 		if ( is_admin() ) {
 			require_once SILENT_AUTOMATION_PATH . 'admin/class-silent-automation-admin.php';
@@ -77,6 +80,9 @@ class Silent_Automation {
 	public function init_classes() {
 		Silent_Automation_API::get_instance();
 		Silent_Automation_Tracker::get_instance();
+		Silent_Automation_WooCommerce::get_instance();
+		Silent_Automation_Automation::get_instance();
+		Silent_Automation_WhatsApp::get_instance();
 		
 		if ( is_admin() ) {
 			Silent_Automation_Admin::get_instance();
