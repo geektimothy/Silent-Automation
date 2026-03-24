@@ -1,0 +1,5 @@
+{
+  "name": "Silent Automation WordPress Plugin",
+  "description": "A production-ready WordPress plugin that tracks user behavior and suggests automations based on engagement patterns.",
+  "requestFramePermissions": []
+}
