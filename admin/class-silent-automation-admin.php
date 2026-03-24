@@ -42,11 +42,19 @@ class Silent_Automation_Admin {
 		}
 
 		wp_enqueue_style( 'silent-admin-css', SILENT_AUTOMATION_URL . 'assets/css/admin.css', array(), SILENT_AUTOMATION_VERSION );
-		wp_enqueue_script( 'silent-admin-js', SILENT_AUTOMATION_URL . 'assets/js/admin.js', array( 'jquery' ), SILENT_AUTOMATION_VERSION, true );
+		
+		// Enqueue Chart.js
+		wp_enqueue_script( 'chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', array(), '4.4.1', true );
+		
+		wp_enqueue_script( 'silent-admin-js', SILENT_AUTOMATION_URL . 'assets/js/admin.js', array( 'jquery', 'chart-js' ), SILENT_AUTOMATION_VERSION, true );
+		
+		$tracker = Silent_Automation_Tracker::get_instance();
+		$chart_data = $tracker->get_events_by_day();
 		
 		wp_localize_script( 'silent-admin-js', 'silentAdmin', array(
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-			'nonce'   => wp_create_nonce( 'silent_admin_nonce' )
+			'nonce'   => wp_create_nonce( 'silent_admin_nonce' ),
+			'chartData' => $chart_data
 		) );
 	}
 
@@ -57,8 +65,8 @@ class Silent_Automation_Admin {
 			<!-- Header Section -->
 			<header class="sa-header">
 				<div class="sa-header-content">
-					<h1>Silent Automation</h1>
-					<p>Track behavior. Turn visitors into customers automatically.</p>
+					<h1>Silent Automation <span style="font-size: 12px; vertical-align: middle; background: var(--sa-accent-soft); color: var(--sa-accent); padding: 4px 8px; border-radius: 6px; margin-left: 8px;">v2.1 PRO</span></h1>
+					<p>Intelligent behavior tracking & conversion engine.</p>
 				</div>
 				<div class="sa-actions">
 					<button class="sa-btn sa-btn-secondary" id="silent-simulate-visit">
@@ -72,13 +80,10 @@ class Silent_Automation_Admin {
 
 			<!-- Navigation Tabs -->
 			<nav class="sa-nav">
-				<a href="<?php echo admin_url('admin.php?page=silent-automation'); ?>" class="sa-nav-item <?php echo $tab === 'overview' ? 'active' : ''; ?>">Overview</a>
+				<a href="<?php echo admin_url('admin.php?page=silent-automation'); ?>" class="sa-nav-item <?php echo $tab === 'overview' ? 'active' : ''; ?>">Dashboard</a>
 				<a href="<?php echo admin_url('admin.php?page=silent-automation&tab=automations'); ?>" class="sa-nav-item <?php echo $tab === 'automations' ? 'active' : ''; ?>">Automations</a>
 				<a href="<?php echo admin_url('admin.php?page=silent-automation&tab=settings'); ?>" class="sa-nav-item <?php echo $tab === 'settings' ? 'active' : ''; ?>">Settings</a>
 			</nav>
-
-			<!-- Stats Cards Section -->
-			<?php $this->render_stats_section(); ?>
 
 			<!-- Main Content Area -->
 			<div class="sa-content">
@@ -146,11 +151,16 @@ class Silent_Automation_Admin {
 		<?php
 	}
 
-	private function render_stats_section() {
+	private function render_overview_tab() {
 		$tracker = Silent_Automation_Tracker::get_instance();
+		$patterns = $tracker->get_detected_patterns();
+		$active_rules = get_option( 'silent_automation_active_rules', array() );
+		$automations = Silent_Automation_Automation::get_instance()->get_automations('all');
+		$latest_events = $tracker->get_latest_events(8);
+		
 		$total_events = $tracker->get_total_events();
-		$active_rules_count = count( get_option( 'silent_automation_active_rules', array() ) );
-		$unique_visitors = $tracker->get_unique_visitors_count(); // Assume this exists or mock it
+		$active_rules_count = count( $active_rules );
+		$unique_visitors = $tracker->get_unique_visitors_count();
 
 		?>
 		<div class="sa-stats-grid">
@@ -167,116 +177,102 @@ class Silent_Automation_Admin {
 				<div class="sa-stat-value"><?php echo number_format( $unique_visitors ); ?></div>
 			</div>
 		</div>
-		<?php
-	}
 
-	private function render_overview_tab() {
-		$tracker = Silent_Automation_Tracker::get_instance();
-		$patterns = $tracker->get_detected_patterns();
-		$active_rules = get_option( 'silent_automation_active_rules', array() );
-		$automations = Silent_Automation_Automation::get_instance()->get_automations('all');
+		<div class="sa-overview-grid">
+			<!-- Main Analytics -->
+			<div class="sa-chart-box">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+					<h2 class="sa-section-title" style="margin: 0;">Activity Overview</h2>
+					<span style="font-size: 12px; color: var(--sa-text-muted);">Last 7 Days</span>
+				</div>
+				<div class="sa-chart-wrapper">
+					<canvas id="sa-activity-chart" height="300"></canvas>
+				</div>
+			</div>
 
-		?>
-		<!-- Opportunities Section -->
-		<section class="sa-section">
-			<h2 class="sa-section-title">Opportunities</h2>
-			<div class="sa-opportunities-grid">
-				<?php if ( empty( $patterns ) ) : ?>
-					<div class="sa-stat-card" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-						<p style="color: var(--sa-text-muted);">No opportunities detected yet. Keep tracking!</p>
-					</div>
-				<?php else : ?>
-					<?php foreach ( $patterns as $pattern ) : 
-						$rule_id = md5( $pattern['type'] . $pattern['page_url'] );
-						$is_active = isset( $active_rules[ $rule_id ] );
-						$badge_class = strpos($pattern['type'], 'intent') !== false ? 'sa-badge-intent' : 'sa-badge-engaged';
-						?>
-						<div class="sa-suggestion-card">
-							<div class="sa-card-header">
+			<!-- Live Feed -->
+			<div class="sa-feed-box">
+				<h2 class="sa-section-title">Live Stream</h2>
+				<div class="sa-live-feed">
+					<?php if ( empty( $latest_events ) ) : ?>
+						<p style="color: #94a3b8; text-align: center; padding: 20px;">Waiting for activity...</p>
+					<?php else : ?>
+						<?php foreach ( $latest_events as $event ) : ?>
+							<div class="sa-feed-item">
+								<div class="sa-feed-icon">
+									<span class="dashicons dashicons-<?php 
+										echo $event->event_type === 'add_to_cart' ? 'cart' : 
+											($event->event_type === 'checkout_completed' ? 'yes' : 'visibility'); 
+									?>"></span>
+								</div>
+								<div class="sa-feed-content">
+									<strong><?php echo esc_html( ucfirst( str_replace('_', ' ', $event->event_type) ) ); ?></strong>
+									<div class="sa-feed-time"><?php echo human_time_diff( strtotime( $event->created_at ), current_time( 'timestamp' ) ); ?> ago</div>
+								</div>
+							</div>
+						<?php endforeach; ?>
+					<?php endif; ?>
+				</div>
+			</div>
+
+			<!-- Opportunities -->
+			<div class="sa-opportunities-box">
+				<h2 class="sa-section-title">Proactive Insights</h2>
+				<div class="sa-opportunities-grid">
+					<?php if ( empty( $patterns ) ) : ?>
+						<div class="sa-stat-card" style="grid-column: 1 / -1; text-align: center; padding: 40px; background: transparent; border-style: dashed;">
+							<p style="color: var(--sa-text-muted);">Analyzing visitor behavior... Insights will appear here.</p>
+						</div>
+					<?php else : ?>
+						<?php foreach ( $patterns as $pattern ) : 
+							$rule_id = md5( $pattern['type'] . $pattern['page_url'] );
+							$is_active = isset( $active_rules[ $rule_id ] );
+							$badge_class = strpos($pattern['type'], 'intent') !== false ? 'sa-badge-intent' : 'sa-badge-engaged';
+							?>
+							<div class="sa-suggestion-card">
 								<span class="sa-badge <?php echo $badge_class; ?>">
 									<?php echo esc_html( ucfirst( str_replace('_', ' ', $pattern['type']) ) ); ?>
 								</span>
 								<h3><?php echo esc_html( $pattern['condition'] ); ?></h3>
 								<p><?php echo esc_html( $pattern['message'] ); ?></p>
+								<button 
+									class="sa-btn <?php echo $is_active ? 'sa-btn-secondary' : 'sa-btn-primary'; ?> silent-toggle-btn"
+									data-rule-id="<?php echo esc_attr( $rule_id ); ?>"
+									data-page-url="<?php echo esc_attr( $pattern['page_url'] ); ?>"
+									data-type="<?php echo esc_attr( $pattern['type'] ); ?>"
+									style="width: 100%;"
+								>
+									<?php echo $is_active ? 'Deactivate' : 'Activate Automation'; ?>
+								</button>
 							</div>
-							<button 
-								class="sa-btn <?php echo $is_active ? 'sa-btn-secondary' : 'sa-btn-primary'; ?> silent-toggle-btn"
-								data-rule-id="<?php echo esc_attr( $rule_id ); ?>"
-								data-page-url="<?php echo esc_attr( $pattern['page_url'] ); ?>"
-								data-type="<?php echo esc_attr( $pattern['type'] ); ?>"
-							>
-								<?php echo $is_active ? 'Turn Off' : 'Turn This On'; ?>
-							</button>
-						</div>
-					<?php endforeach; ?>
-				<?php endif; ?>
+						<?php endforeach; ?>
+					<?php endif; ?>
+				</div>
 			</div>
-		</section>
-
-		<!-- Active Automations Section -->
-		<section class="sa-section">
-			<h2 class="sa-section-title">Active Automations</h2>
-			<div class="sa-automations-list">
-				<?php if ( empty( $automations ) ) : ?>
-					<div style="padding: 40px; text-align: center; color: var(--sa-text-muted);">
-						No custom automations created yet.
-					</div>
-				<?php else : ?>
-					<table class="sa-table">
-						<thead>
-							<tr>
-								<th>Automation Name</th>
-								<th>Condition</th>
-								<th>Action</th>
-								<th>Status</th>
-								<th style="text-align: right;">Actions</th>
-							</tr>
-						</thead>
-						<tbody>
-							<?php foreach ( $automations as $auto ) : ?>
-								<tr>
-									<td><strong><?php echo esc_html( $auto->name ); ?></strong></td>
-									<td><?php echo esc_html( ucfirst( str_replace('_', ' ', $auto->condition_type) ) ); ?></td>
-									<td><?php echo esc_html( ucfirst( $auto->action_type ) ); ?></td>
-									<td>
-										<span class="sa-status-badge <?php echo $auto->status === 'active' ? 'sa-status-active' : 'sa-status-paused'; ?>">
-											<span class="sa-status-dot"></span>
-											<?php echo esc_html( ucfirst( $auto->status ) ); ?>
-										</span>
-									</td>
-									<td style="text-align: right;">
-										<button class="sa-btn sa-btn-secondary silent-delete-auto" data-id="<?php echo $auto->id; ?>" style="padding: 6px 10px;">
-											<span class="dashicons dashicons-trash"></span>
-										</button>
-									</td>
-								</tr>
-							<?php endforeach; ?>
-						</tbody>
-					</table>
-				<?php endif; ?>
-			</div>
-		</section>
+		</div>
 		<?php
 	}
 
 	private function render_automations_tab() {
 		$automations = Silent_Automation_Automation::get_instance()->get_automations('all');
 		?>
-		<section class="sa-section">
-			<div class="sa-header-content" style="margin-bottom: 24px;">
-				<h2 class="sa-section-title">All Automations</h2>
-				<p style="color: var(--sa-text-muted);">Manage your custom behavior-based triggers and actions.</p>
+		<div class="sa-chart-box" style="width: 100%; box-sizing: border-box;">
+			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+				<div>
+					<h2 class="sa-section-title" style="margin: 0;">Active Automations</h2>
+					<p style="color: var(--sa-text-muted); margin-top: 4px;">Manage your custom behavior-based triggers and actions.</p>
+				</div>
+				<button class="sa-btn sa-btn-primary" onclick="document.getElementById('silent-open-builder').click()">
+					<span class="dashicons dashicons-plus"></span> New Automation
+				</button>
 			</div>
 			
 			<div class="sa-automations-list">
 				<?php if ( empty( $automations ) ) : ?>
-					<div class="sa-stat-card" style="text-align: center; padding: 60px;">
+					<div style="text-align: center; padding: 60px; border: 1px dashed var(--sa-border); border-radius: var(--sa-radius-xl);">
 						<span class="dashicons dashicons-plus-alt" style="font-size: 48px; width: 48px; height: 48px; color: var(--sa-text-muted); margin-bottom: 16px;"></span>
 						<h3>No automations yet</h3>
 						<p style="color: var(--sa-text-muted); margin-bottom: 24px;">Create your first automation to start converting visitors.</p>
-						<button class="sa-btn sa-btn-primary" onclick="document.getElementById('silent-open-builder').click()">
-							Create Automation
-						</button>
 					</div>
 				<?php else : ?>
 					<table class="sa-table">
@@ -292,9 +288,20 @@ class Silent_Automation_Admin {
 						<tbody>
 							<?php foreach ( $automations as $auto ) : ?>
 								<tr>
-									<td><strong><?php echo esc_html( $auto->name ); ?></strong></td>
-									<td><?php echo esc_html( ucfirst( str_replace('_', ' ', $auto->condition_type) ) ); ?></td>
-									<td><?php echo esc_html( ucfirst( $auto->action_type ) ); ?></td>
+									<td>
+										<div style="font-weight: 600; color: var(--sa-text-primary);"><?php echo esc_html( $auto->name ); ?></div>
+										<div style="font-size: 11px; color: var(--sa-text-muted);">ID: #<?php echo $auto->id; ?></div>
+									</td>
+									<td>
+										<span class="sa-badge sa-badge-engaged">
+											<?php echo esc_html( ucfirst( str_replace('_', ' ', $auto->condition_type) ) ); ?>
+										</span>
+									</td>
+									<td>
+										<span class="sa-badge sa-badge-intent">
+											<?php echo esc_html( ucfirst( $auto->action_type ) ); ?>
+										</span>
+									</td>
 									<td>
 										<span class="sa-status-badge <?php echo $auto->status === 'active' ? 'sa-status-active' : 'sa-status-paused'; ?>">
 											<span class="sa-status-dot"></span>
@@ -302,7 +309,7 @@ class Silent_Automation_Admin {
 										</span>
 									</td>
 									<td style="text-align: right;">
-										<button class="sa-btn sa-btn-secondary silent-delete-auto" data-id="<?php echo $auto->id; ?>" style="padding: 6px 10px;">
+										<button class="sa-btn sa-btn-secondary silent-delete-auto" data-id="<?php echo $auto->id; ?>" style="padding: 8px;">
 											<span class="dashicons dashicons-trash"></span>
 										</button>
 									</td>
@@ -312,7 +319,7 @@ class Silent_Automation_Admin {
 					</table>
 				<?php endif; ?>
 			</div>
-		</section>
+		</div>
 		<?php
 	}
 
@@ -329,21 +336,25 @@ class Silent_Automation_Admin {
 	private function render_settings_tab() {
 		$settings = get_option( 'silent_automation_settings', array() );
 		?>
-		<div class="sa-section" style="max-width: 500px;">
-			<h2 class="sa-section-title">Global Settings</h2>
+		<div class="sa-chart-box" style="max-width: 600px;">
+			<h2 class="sa-section-title" style="margin-bottom: 24px;">Global Configuration</h2>
 			
-			<div class="sa-stat-card">
-				<form id="silent-settings-form" class="silent-builder-form">
-					<div class="silent-form-group">
-						<label>WhatsApp Number</label>
-						<input type="text" name="whatsapp_number" value="<?php echo esc_attr( $settings['whatsapp_number'] ); ?>" placeholder="e.g. 15551234567">
-						<p class="description">Include country code without + or spaces.</p>
+			<form id="silent-settings-form" class="silent-builder-form">
+				<div class="silent-form-group">
+					<label style="color: var(--sa-text-primary); font-weight: 600; display: block; margin-bottom: 8px;">WhatsApp Business Number</label>
+					<div style="position: relative;">
+						<span class="dashicons dashicons-whatsapp" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--sa-text-muted);"></span>
+						<input type="text" name="whatsapp_number" value="<?php echo esc_attr( $settings['whatsapp_number'] ); ?>" placeholder="e.g. 15551234567" style="padding-left: 40px; width: 100%; box-sizing: border-box;">
 					</div>
-					<div class="silent-form-actions">
-						<button type="submit" class="sa-btn sa-btn-primary">Save Settings</button>
-					</div>
-				</form>
-			</div>
+					<p class="description" style="margin-top: 8px; font-size: 12px; color: var(--sa-text-muted);">Include country code without + or spaces. This number will receive automation triggers.</p>
+				</div>
+
+				<div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--sa-border);">
+					<button type="submit" class="sa-btn sa-btn-primary" style="width: 100%; justify-content: center;">
+						Update Settings
+					</button>
+				</div>
+			</form>
 		</div>
 		<?php
 	}

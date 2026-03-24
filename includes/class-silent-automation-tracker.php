@@ -98,4 +98,34 @@ class Silent_Automation_Tracker {
 		global $wpdb;
 		return $wpdb->get_var( "SELECT COUNT(DISTINCT session_id) FROM {$wpdb->prefix}silent_events" );
 	}
+
+	/**
+	 * Get event counts grouped by day for the last X days
+	 */
+	public function get_events_by_day( $days = 7 ) {
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'silent_events';
+		
+		return $wpdb->get_results( $wpdb->prepare( "
+			SELECT DATE(created_at) as date, COUNT(*) as count 
+			FROM $table_name 
+			WHERE created_at >= DATE_SUB(NOW(), INTERVAL %d DAY) 
+			GROUP BY DATE(created_at) 
+			ORDER BY date ASC
+		", $days ) );
+	}
+
+	/**
+	 * Get the latest activity events
+	 */
+	public function get_latest_events( $limit = 10 ) {
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'silent_events';
+		
+		return $wpdb->get_results( $wpdb->prepare( "
+			SELECT * FROM $table_name 
+			ORDER BY created_at DESC 
+			LIMIT %d
+		", $limit ) );
+	}
 }

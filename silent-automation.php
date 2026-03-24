@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define constants
-define( 'SILENT_AUTOMATION_VERSION', '2.0.0' );
-define( 'SILENT_AUTOMATION_PATH', plugin_dir_path( __FILE__ ) );
+define( 'SILENT_AUTOMATION_VERSION', '2.1.0' );
+define( 'SILENT_AUTOMATION_PATH', trailingslashit( wp_normalize_path( dirname( __FILE__ ) ) ) );
 define( 'SILENT_AUTOMATION_URL', plugin_dir_url( __FILE__ ) );
 
 /**
