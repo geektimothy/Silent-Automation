@@ -1,20 +1,41 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Silent Automation WordPress Plugin V2
 
-# Run and deploy your AI Studio app
+A production-ready WordPress plugin that tracks user behavior and suggests simple automations.
 
-This contains everything you need to run your app locally.
+## New in V2
+- **WooCommerce Integration**: Automatically tracks "Add to Cart" and "Checkout" events.
+- **Advanced Pattern Detection**: Detects cart abandonment and high-value visitors.
+- **Automation Builder**: Create custom rules with specific conditions and actions.
+- **WhatsApp Triggers**: Send users directly to WhatsApp with pre-filled messages.
+- **Tabbed Admin UI**: Improved dashboard with Overview, Automations, and Settings.
 
-View your app in AI Studio: https://ai.studio/apps/3a3f23e6-88bc-4709-9cf9-2ec74c46af01
+## Features
+- **Behavior Tracking**: Tracks page visits and time spent using a unique session ID.
+- **REST API**: Securely sends tracking data to the WordPress backend.
+- **Pattern Detection**: Identifies "High Intent", "Engaged", and "Cart Abandonment".
+- **Admin Dashboard**: Native WordPress UI to view stats and suggestions.
+- **One-Click Automation**: Activate popups or WhatsApp triggers for specific behavior patterns.
 
-## Run Locally
+## Installation
+1. Download the `silent-automation` folder.
+2. Upload the folder to your WordPress installation's `wp-content/plugins/` directory.
+3. Log in to your WordPress Admin dashboard.
+4. Navigate to **Plugins > Installed Plugins**.
+5. Find **Silent Automation** and click **Activate**.
 
-**Prerequisites:**  Node.js
+## Usage
+- **Overview**: See detected patterns from visitor behavior.
+- **Automations**: Build custom rules (e.g., "If Cart Abandonment, show WhatsApp button").
+- **Settings**: Configure your WhatsApp number for triggers.
 
+## File Structure
+- `silent-automation.php`: Main plugin entry point.
+- `includes/`: Core logic (DB, API, Tracking, WooCommerce, Automation, WhatsApp).
+- `admin/`: Dashboard UI and AJAX handlers.
+- `public/`: Frontend assets and popup logic.
+- `assets/`: JavaScript and CSS files.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Security
+- Uses WordPress Nonces for REST API and AJAX requests.
+- Sanitizes and validates all inputs.
+- Follows WordPress coding standards and OOP principles.

@@ -1,4 +1,16 @@
 jQuery(document).ready(function($) {
+    // Simulate Visit
+    $('#silent-simulate-visit').on('click', function() {
+        const $btn = $(this);
+        $btn.prop('disabled', true).text('Simulating...');
+        
+        // Just a mock interaction for the UI redesign
+        setTimeout(function() {
+            alert('Visit simulated! New data will appear in the dashboard shortly.');
+            $btn.prop('disabled', false).html('<span class="dashicons dashicons-visibility"></span> Simulate Visit');
+        }, 1000);
+    });
+
     // Modal Toggles
     $('#silent-open-builder').on('click', function() {
         $('#silent-builder-overlay').fadeIn(200);
@@ -16,7 +28,7 @@ jQuery(document).ready(function($) {
     });
 
     // V1 Toggle
-    $('.silent-toggle-btn').on('click', function() {
+    $('.sa-container').on('click', '.silent-toggle-btn', function() {
         const $btn = $(this);
         const data = {
             action: 'silent_toggle_automation',
@@ -31,9 +43,9 @@ jQuery(document).ready(function($) {
         $.post(silentAdmin.ajaxUrl, data, function(response) {
             if (response.success) {
                 if (response.data.status === 'activated') {
-                    $btn.removeClass('silent-btn-primary').addClass('silent-btn-secondary').text('Deactivate');
+                    $btn.removeClass('sa-btn-primary').addClass('sa-btn-secondary').text('Turn Off');
                 } else {
-                    $btn.removeClass('silent-btn-secondary').addClass('silent-btn-primary').text('Activate');
+                    $btn.removeClass('sa-btn-secondary').addClass('sa-btn-primary').text('Turn This On');
                 }
             }
             $btn.prop('disabled', false);

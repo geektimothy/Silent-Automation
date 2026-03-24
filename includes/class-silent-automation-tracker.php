@@ -93,4 +93,9 @@ class Silent_Automation_Tracker {
 		global $wpdb;
 		return $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}silent_events" );
 	}
+
+	public function get_unique_visitors_count() {
+		global $wpdb;
+		return $wpdb->get_var( "SELECT COUNT(DISTINCT session_id) FROM {$wpdb->prefix}silent_events" );
+	}
 }
